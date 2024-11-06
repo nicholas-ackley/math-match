@@ -1,0 +1,137 @@
+#Nicholas Ackley "GUI" Module
+#GUI should display a message that says pick a number from the cards, after picking flip the card and reveal a math equation that has a
+#corresponding number value. This should be looped until the user has completed the entire deck, and display a "finished" message.
+
+
+
+
+.data
+newline: .asciiz "\n"
+space: .asciiz "    "           # four spaces for consistent grid alignment
+prompt: .asciiz 	"\nPick a card (1-16): \n "
+card_chosen: .asciiz 	"You picked card: "
+already_chosen: .asciiz "\nCard already chosen, try again."
+all_chosen: .asciiz 	"\nAll cards have been chosen.\n"
+cards: .space 16                #the array to keep track of chosen cards 
+
+.text
+.globl main
+
+main:
+    li $t0, 1                 #counter to 1
+
+game_loop:
+    #display the 4x4 grid of numbers or "x" if chosen
+    li $t0, 1                 #reset counter for display
+display_grid:
+    li $t1, 4                 #set column count to 4
+
+row_loop:
+    li $t1, 4                 #set column count to 4
+
+col_loop:
+    #check if the card has been chosen
+    la $t5, cards             #load address of cards array
+    add $t6, $t5, $t0         #calculate the address of the current card in array
+    lb $t7, 0($t6)            #load the value of the current card 
+
+    #orints the "x" if already chosen
+    beqz $t7, print_number     #if card is not chosen, then print number
+    li $v0, 4                 #print 'X'
+    la $a0, space             #use space to maintain alignment
+    syscall
+    li $v0, 11                #print character syscall for 'X'
+    li $a0, 'X'
+    syscall
+    j print_space
+
+print_number:
+    li $v0, 1                 #syscall int
+    move $a0, $t0             #move counter value to $a0 to print
+    syscall
+
+print_space:
+    #print spaces after each number except the last in the row
+    li $t2, 4
+    div $t0, $t2              #divde by 4
+    mfhi $t3                  #remainder
+    bnez $t3, not_end_of_row
+
+print_newline:
+    li $v0, 4                 #newl
+    la $a0, newline
+    syscall
+    j end_col_loop
+
+not_end_of_row:
+    li $v0, 4              
+    la $a0, space
+    syscall
+
+end_col_loop:
+    addi $t0, $t0, 1          #increment counter
+    addi $t1, $t1, -1         #decrease column counter
+    bgtz $t1, col_loop        #continue inner loop if $t1 > 0
+    ble $t0, 16, row_loop     #cntinue outer loop if $t0 <= 16
+
+    #check if all cards are chosen
+check_all_chosen:
+    la $t5, cards
+    li $t0, 1
+    li $t8, 1                 #check if all are chosen
+
+all_chosen_loop:
+    lb $t7, 0($t5)            #load cards chosen status
+    beqz $t7, prompt_user     #if card is 0, next
+    addi $t5, $t5, 1          #nove next card
+    addi $t0, $t0, 1
+    ble $t0, 16, all_chosen_loop
+    li $v0, 4
+    la $a0, all_chosen
+    syscall
+    li $v0, 10                #exit 
+    syscall
+
+prompt_user:
+    #prompt the user to pick a card
+    li $v0, 4                
+    la $a0, prompt
+    syscall
+
+    #read user input
+    li $v0, 5                 #syscall read int
+    syscall
+    move $t4, $v0             #store user inoput into $t4
+
+    #check if valid and unchosen if unchosen prompt the "already taken:
+    blt $t4, 1, prompt_user   #if input is less than 1 reprompt
+    bgt $t4, 16, prompt_user  #if input is greater than 16 reprompt
+
+    #find the position in the arr
+    la $t5, cards
+    add $t6, $t5, $t4
+    lb $t7, 0($t6)            #load the card status
+
+    #condition if the card has been chosen
+    bnez $t7, card_already_chosen
+
+    #mark the card as chosen
+    li $t7, 1
+    sb $t7, 0($t6)
+
+    #display the chosen card 
+    li $v0, 4                 #print
+    la $a0, card_chosen
+    syscall
+
+    li $v0, 1                 #print
+    move $a0, $t4             #move into $a0 for printing
+    syscall
+    j game_loop               #gam eloop
+
+card_already_chosen:
+    #notifys the user if the card has already been chosen
+    li $v0, 4
+    la $a0, already_chosen
+    syscall
+    j prompt_user             #reprompt the user 
