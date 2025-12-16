@@ -1,4 +1,4 @@
-# 🧮 Math Matching Game (MIPS Assembly)
+#  Math Matching Game (MIPS Assembly)
 
 This project is a simple **Math Matching Game** written in **MIPS Assembly** and executed using the **MARS (MIPS Assembler and Runtime Simulator)** environment. The goal of the game is to test and improve the user's ability to match math problems with their correct answers through console-based interaction.
 
